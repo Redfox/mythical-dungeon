@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use bevy::prelude::*;
+use bevy_ecs_ldtk::prelude::*;
 use crate::game::GamePlugin;
 
 mod game;
@@ -11,6 +12,7 @@ fn main() {
             DefaultPlugins
                 .set(game::config::get_window_config())
         )
+        .add_plugin(LdtkPlugin)
         .add_plugin(GamePlugin);
 
     app.run();

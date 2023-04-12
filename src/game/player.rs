@@ -8,8 +8,16 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_startup_system(spawn_player);
+            .add_startup_system(spawn_player)
+            .add_system(player);
     }
+}
+
+fn player(mut players: Query<(&mut Player, &mut Transform, &mut Velocity)>) {
+    // for (mut player, mut transform, mut velocity) in players.iter_mut() {
+    //     println!("z index: {}", transform.translation.z);
+    //     transform.translation.z += 1.;
+    // }
 }
 
 fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -41,7 +49,7 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..Default::default()
                     },
                     transform: Transform {
-                        translation: Vec3::new(left + 70. / 2. + padding_left, 200. - (200. * i as f32), 0.),
+                        translation: Vec3::new(left + 70. / 2. + padding_left, 200. - (200. * i as f32), 1.),
                         ..Default::default()
                     },
                     ..Default::default()

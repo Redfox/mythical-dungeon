@@ -1,4 +1,4 @@
-# Mythical Dungeonm
+# Mythical Dungeon
 
 Mythic Dungeon is a turn-based rpg where the player has to go through a map to get resources and invites party members to defeat a boss.
 
