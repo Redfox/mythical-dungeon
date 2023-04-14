@@ -8,39 +8,95 @@ pub struct BattlePlugin;
 
 #[derive(Component, Debug)]
 pub struct PlayerBattle {
+    pub position: f32,
     pub speed: f32,
+    pub size: f32,
 }
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_startup_system(setup_battle.in_base_set(StartupSet::PostStartup))
+            .add_startup_system(setup_ui_battle.in_base_set(StartupSet::PostStartup))
             .add_startup_system(spawn_player_battle.in_base_set(StartupSet::PostStartup))
             .add_system(handle_battle)
             .add_system(handle_mouse_hover);
     }
 }
 
-fn setup_battle(
+fn setup_ui_battle(
     mut commands: Commands,
-    win_size: Res<WinSize>,
+    mut players: Query<(&mut Player)>
 ) {
-    let bottom = -win_size.width / 2.;
     commands
-        .spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::BLUE,
-                    custom_size: Some(Vec2::new(600., 30.)),
-                    ..Default::default()
-                },
-                transform: Transform {
-                    translation: Vec3::new(0., bottom + 200., 0.),
-                    ..Default::default()
-                },
-                ..Default::default()
-            }
-        ));
+        .spawn(NodeBundle {
+            style: Style {
+                size: Size::all(Val::Percent(100.)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::FlexStart,
+                ..default()
+            },
+            ..default()
+        })
+        .with_children(|parent| {
+            parent
+                .spawn(NodeBundle {
+                    style: Style {
+                        size: Size {
+                            width: Val::Px(600.),
+                            height: Val::Px(40.),
+                        },
+                        position_type: PositionType::Absolute,
+                        position: UiRect {
+                            bottom: Val::Px(25.),
+                            ..default()
+                        },
+                        justify_content: JustifyContent::End,
+                        align_items: AlignItems::FlexEnd,
+                        ..default()
+                    },
+                    background_color: Color::BLUE.into(),
+                    ..default()
+                })
+                .with_children(|parent| {
+                    parent
+                        .spawn(NodeBundle {
+                            style: Style {
+                                size: Size {
+                                    width: Val::Px(100.),
+                                    height: Val::Px(40.),
+                                    ..default()
+                                },
+                                position_type: PositionType::Relative,
+                                ..default()
+                            },
+                            background_color: Color::RED.into(),
+                            ..default()
+                        });
+
+                    for player in players.iter_mut() {
+                        parent
+                            .spawn(NodeBundle {
+                                style: Style {
+                                    size: Size {
+                                        width: Val::Px(player.size),
+                                        height: Val::Px(player.size),
+                                        ..default()
+                                    },
+                                    position_type: PositionType::Absolute,
+                                    position: UiRect {
+                                        left: Val::Px(0.),
+                                        top: Val::Px(0. - player.size),
+                                        ..default()
+                                    },
+                                    ..default()
+                                },
+                                background_color: player.color.into(),
+                                ..default()
+                            })
+                            .insert(PlayerBattle { speed: player.speed, position: 0., size: player.size });
+                    }
+                });
+        });
 }
 
 fn spawn_player_battle(
@@ -52,26 +108,34 @@ fn spawn_player_battle(
 ) {
     for player in players.iter_mut() {
         let player_circle = -win_size.width / 2. + 200. + (10. * 2.) + 5. + 3.;
-        commands
-            .spawn(MaterialMesh2dBundle {
-                mesh: meshes.add(shape::Circle::new(10.).into()).into(),
-                material: materials.add(ColorMaterial::from(player.color)),
-                transform: Transform {
-                    translation: Vec3::new(-600. / 2., player_circle, 0.),
-                    ..Default::default()
-                },
-                ..Default::default()
-            })
-            .insert(PlayerBattle { speed: player.speed });
-    }
+        // commands
+        //     .spawn(MaterialMesh2dBundle {
+        //         mesh: meshes.add(shape::Circle::new(10.).into()).into(),
+        //         material: materials.add(ColorMaterial::from(player.color)),
+        //         transform: Transform {
+        //             translation: Vec3::new(-600. / 2., player_circle, 0.),
+        //             ..Default::default()
+        //         },
+        //         ..Default::default()
+        //     })
+        //     .insert(PlayerBattle { speed: player.speed });
+    };
 }
 
 fn handle_battle(
-    mut query: Query<(&mut Transform, &mut PlayerBattle), With<PlayerBattle>>
+    mut query: Query<(&mut Style, &mut PlayerBattle), With<PlayerBattle>>
 ) {
-    for (mut transform, mut player) in query.iter_mut() {
-        if transform.translation.x < 300. {
-            transform.translation.x += player.speed;
+    for (mut style, mut player) in query.iter_mut() {
+        // let lol = style.size.height as f32;
+        //
+        // if player.position - style.size.height as f32 < 600. {
+        //     player.position += player.speed;
+        //     style.position.left = Val::Px(player.position);
+        // }
+
+        if player.position < 600. - player.size {
+            player.position += player.speed;
+            style.position.left = Val::Px(player.position);
         }
     }
 }
@@ -92,42 +156,18 @@ fn handle_mouse_hover(
 
         match position {
             Some(position) => {
-                // println!("X: {}, Y: {}", position.x, position.y);
                 if
                     position.x > init_pos_x - (70. / 2.) && position.x < init_pos_x + (70. / 2.)
                     && position.y > init_pos_y - (70. / 2.) && position.y < init_pos_y + (70. / 2.)
                 {
-                    // println!("X no {}", player.name.clone());
-                    sprite.color = Color::RED;
+                    // sprite.color = Color::RED;
                 } else {
-                    sprite.color = player.color;
+                    // sprite.color = player.color;
                 }
             },
             None => {
-                // println!("No position");
-                sprite.color = player.color;
+                // sprite.color = player.color;
             }
         }
     }
-
-    // let middle_screen = 500.;
-    // let init_pos = transform.translation.x + middle_screen;
-    //
-    // let window = windows.single_mut();
-    //
-    // let position = window.cursor_position();
-    //
-    // match position {
-    //     Some(position) => {
-    //         // println!("X: {}, Y: {}", position.x, position.y);
-    //         if position.x > init_pos && position.x < init_pos + 70. {
-    //             println!("X no dale {}", position.x);
-    //         }
-    //     },
-    //     None => {
-    //         // println!("No position");
-    //     }
-    // }
-
-    // println!("{:?}", window.cursor_position());
 }

@@ -1,4 +1,6 @@
-use bevy::prelude::{Color, Component};
+use bevy::asset::Handle;
+use bevy::prelude::{Color, Component, Image};
+use bevy_ecs_ldtk::LdtkEntity;
 
 #[derive(Component)]
 pub struct Velocity {
@@ -6,10 +8,12 @@ pub struct Velocity {
     pub y: f32,
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, LdtkEntity)]
 pub struct Player {
     pub name: String,
     pub speed: f32,
     pub color: Color,
     pub skills: Vec<String>,
+    pub size: f32,
+    pub texture: Handle<Image>
 }
