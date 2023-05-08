@@ -1,46 +1,38 @@
-use bevy::{diagnostic::LogDiagnosticsPlugin, prelude::*};
-use bevy_ecs_ldtk::{LdtkSettings, SetClearColor};
+use bevy::prelude::*;
+use crate::AppState;
 use crate::game::battle::BattlePlugin;
+use crate::game::enemy::EnemyPlugin;
+use crate::game::map::MapPlugin;
 use crate::game::player::PlayerPlugin;
-use bevy_ecs_ldtk::prelude::*;
+use crate::game::systems::startup;
+use crate::game::ui::GameUIPlugin;
 
-pub(crate) mod config;
-mod player;
-mod components;
+mod systems;
+mod map;
 mod battle;
+mod player;
+mod ui;
+mod enemy;
 
 pub struct GamePlugin;
 
-#[derive(Resource)]
-struct WinSize {
-    height: f32,
-    width: f32,
-}
-
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup)
-            .insert_resource(LevelSelection::Index(0))
+        app
+            .add_state::<GameState>()
+            .add_system(startup.in_schedule(OnEnter(AppState::Game)))
+            .add_plugin(MapPlugin)
+            .add_plugin(BattlePlugin)
             .add_plugin(PlayerPlugin)
-            .add_plugin(BattlePlugin);
+            .add_plugin(EnemyPlugin)
+            .add_plugin(GameUIPlugin);
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Query<&mut Window>) {
-    commands.spawn(Camera2dBundle::default());
-
-    let mut window = windows.single_mut();
-    let (win_w, win_h) = (window.width(), window.height());
-
-    commands.spawn(LdtkWorldBundle {
-        ldtk_handle: asset_server.load("ldtk.ldtk"),
-        transform: Transform::from_xyz(-win_w / 2., -win_h / 2., 0.0),
-        ..Default::default()
-    });
-
-    let win_size = WinSize {
-        height: win_h,
-        width: win_w,
-    };
-    commands.insert_resource(win_size);
+#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+pub enum GameState {
+    #[default]
+    None,
+    Map,
+    Battle,
 }

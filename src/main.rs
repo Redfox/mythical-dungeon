@@ -1,28 +1,36 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
 use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use crate::game::GamePlugin;
+use crate::main_menu::MainMenuPlugin;
+use crate::systems::spawn_camera;
+use bevy_mod_picking::*;
+use bevy_inspector_egui::prelude::*;
+use bevy_inspector_egui::quick::{WorldInspectorPlugin, ResourceInspectorPlugin};
 
+mod systems;
+mod main_menu;
 mod game;
+
+#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+pub enum AppState {
+    #[default]
+    MainMenu,
+    Game,
+}
 
 fn main() {
     let mut app = App::new();
-    app.insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
-        .add_plugins(
-            DefaultPlugins
-                .set(game::config::get_window_config())
-                .set(AssetPlugin {
-                    watch_for_changes: true,
-                    ..default()
-                })
-        )
-        .add_plugin(LdtkPlugin)
-        .add_plugin(GamePlugin);
+    app
+        .add_plugins(DefaultPlugins)
+        .add_state::<AppState>()
+        .add_plugins(DefaultPickingPlugins)
+        .add_plugin(MainMenuPlugin)
+        .add_plugin(GamePlugin)
+        .add_startup_system(spawn_camera);
 
     app.add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(bevy_inspector_egui::quick::WorldInspectorPlugin::new());
+        .add_plugin(WorldInspectorPlugin::new());
 
     app.run();
 }
