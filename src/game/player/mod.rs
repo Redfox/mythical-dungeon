@@ -19,7 +19,7 @@ impl Plugin for PlayerPlugin {
             .add_system(
                 player_attack
                     .in_set(OnUpdate(GameState::Battle))
-            )
-            .add_plugin(ResourceInspectorPlugin::<Player>::default());
+            );
+
     }
 }

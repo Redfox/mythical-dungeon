@@ -7,6 +7,7 @@ use crate::systems::spawn_camera;
 use bevy_mod_picking::*;
 use bevy_inspector_egui::prelude::*;
 use bevy_inspector_egui::quick::{WorldInspectorPlugin, ResourceInspectorPlugin};
+use crate::game::player::resources::Player;
 
 mod systems;
 mod main_menu;
@@ -29,8 +30,10 @@ fn main() {
         .add_plugin(GamePlugin)
         .add_startup_system(spawn_camera);
 
+    #[cfg(debug_assertions)]
     app.add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(WorldInspectorPlugin::new());
+        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(ResourceInspectorPlugin::<Player>::default());
 
     app.run();
 }

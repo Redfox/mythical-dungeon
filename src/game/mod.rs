@@ -10,7 +10,7 @@ use crate::game::ui::GameUIPlugin;
 mod systems;
 mod map;
 mod battle;
-mod player;
+pub mod player;
 mod ui;
 mod enemy;
 
