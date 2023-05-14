@@ -2312,6 +2312,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mythical-dungeon"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "bevy_ecs_ldtk",
+ "bevy_mod_picking",
+]
+
+[[package]]
 name = "naga"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2874,16 +2884,6 @@ dependencies = [
  "base64",
  "bitflags",
  "serde",
-]
-
-[[package]]
-name = "rust-game"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy-inspector-egui",
- "bevy_ecs_ldtk",
- "bevy_mod_picking",
 ]
 
 [[package]]
