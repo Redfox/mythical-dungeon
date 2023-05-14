@@ -1,34 +1,12 @@
 use bevy::core::Name;
 use bevy::prelude::*;
-use bevy::sprite::MaterialMesh2dBundle;
+use bevy::sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle};
 use crate::game::battle::BattleEvent;
 use crate::game::player::resources::{Player, Character};
 use crate::game::enemy::resources::Enemy;
 use bevy_inspector_egui::prelude::*;
 use crate::game::GameState;
-
-#[derive(Component)]
-struct AnimationIndices {
-    first: usize,
-    last: usize,
-}
-
-#[derive(Component, Debug)]
-pub struct CharacterComponent {
-    data: Character
-}
-
-#[derive(Component, Debug, Reflect, InspectorOptions)]
-pub struct EnemyComponent {
-    max_hp: f32,
-    hp: f32,
-}
-
-#[derive(Component, Debug)]
-pub struct CharSkill { }
-
-#[derive(Component, Debug)]
-pub struct Skill { }
+use crate::game::battle::components::*;
 
 pub fn startup(mut app_state_next_state: ResMut<NextState<BattleEvent>>,) {
     app_state_next_state.set(BattleEvent::PlayerWarmup);
@@ -68,6 +46,8 @@ pub fn spawn_enemy(
     asset_server: Res<AssetServer>,
     enemy: Res<Enemy>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let texture = asset_server.load("1x/Bog Dwellers/Beholder_idle.png");
     let texture_atlas =
@@ -88,7 +68,48 @@ pub fn spawn_enemy(
                 hp: enemy.health,
             },
             Name::new(enemy.name.clone())
-        ));
+        ))
+        .with_children(| parent | {
+            parent
+                .spawn((
+                    MaterialMesh2dBundle {
+                        mesh: meshes
+                            .add(shape::Quad::new(Vec2::new(100., 10.)).into())
+                            .into(),
+                        material: materials.add(ColorMaterial::from(Color::BLACK)),
+                        transform: Transform::from_xyz(0., -25., -1.),
+                        ..default()
+                    },
+                    HealthBar { },
+                    Name::new("Enemy Health Bar")
+                ))
+                .with_children(| parent | {
+                    let max_hp = enemy.health;
+                    let enemy_hp = enemy.health;
+
+                    let percent = enemy_hp / max_hp;
+
+                    let min: f32 = -50.;
+                    let max = 0.;
+
+                    let result = (max - min) as f32 * percent;
+                    let final_result = result - min.abs();
+
+                    parent
+                        .spawn((
+                            MaterialMesh2dBundle {
+                                mesh: meshes
+                                    .add(shape::Quad::new(Vec2::new(100. * percent, 10.)).into())
+                                    .into(),
+                                material: materials.add(ColorMaterial::from(Color::GREEN)),
+                                transform: Transform::from_xyz(final_result, 0., 1.),
+                                ..default()
+                            },
+                            HealthBarFill { },
+                            Name::new("Enemy Health Bar Fill")
+                        ));
+                });
+        });
 }
 
 pub fn char_skills(
@@ -180,14 +201,58 @@ pub fn despawn_system(
     skills_entities: Query<Entity, With<Skill>>,
     enemy_entities: Query<Entity, With<EnemyComponent>>,
     char_entities: Query<Entity, With<CharacterComponent>>,
+    health_bar_entities: Query<Entity, With<HealthBar>>,
+    health_bar_fill_entities: Query<Entity, With<HealthBarFill>>,
 ) {
     let entities = char_skills_entities.iter()
                                         .chain(skills_entities.iter())
                                         .chain(enemy_entities.iter())
                                         .chain(char_entities.iter())
+                                        .chain(health_bar_entities.iter()
+                                        .chain(health_bar_fill_entities.iter()))
                                         .collect::<Vec<Entity>>();
 
     for entity in entities {
         commands.entity(entity).despawn();
+    }
+}
+
+pub fn enemy_health_bar(
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    enemy_query: Query<(&EnemyComponent, &Children), (Changed<EnemyComponent>)>,
+    health_bar_query: Query<(&HealthBar, &Children)>,
+    mut health_bar_fill_query: Query<(&mut Transform, &mut Mesh2dHandle,  &mut Handle<ColorMaterial>, &HealthBarFill)>,
+) {
+    if let Ok((enemy, children)) = enemy_query.get_single() {
+        for &child in children.iter() {
+            if let Ok((health_bar, health_bar_children)) = health_bar_query.get(child) {
+                for &health_bar_child in health_bar_children.iter() {
+                    if let Ok((mut health_bar_transform, mut mesh, color, _)) = health_bar_fill_query.get_mut(health_bar_child) {
+                        let max_hp = enemy.max_hp;
+                        let enemy_hp = enemy.hp;
+
+                        let percent = enemy_hp / max_hp;
+
+                        let min: f32 = -50.;
+                        let max = 0.;
+
+                        let result = (max - min) as f32 * percent;
+                        let final_result = result - min.abs();
+
+                        mesh.0 = meshes
+                            .add(shape::Quad::new(Vec2::new(100. * percent, 10.)).into())
+                            .into();
+
+                        if percent <= 0.25 {
+                            let mut color_mat = materials.get_mut(&color).unwrap();
+                            color_mat.color = Color::RED;
+                        }
+
+                        health_bar_transform.translation.x = final_result;
+                    }
+                }
+            }
+        }
     }
 }
